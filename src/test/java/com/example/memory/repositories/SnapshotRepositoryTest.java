@@ -22,15 +22,17 @@ public class SnapshotRepositoryTest {
     public void putAnItemAndDeleteIfSuccessful() {
         try {
             snapshotRepository.putItem(Snapshot.builder()
-                    .id("2")
+                    .username("nanda")
+                    .id("123")
                     .build());
-            snapshotRepository.deleteItemFromKey("id", "2");
+            snapshotRepository.deleteItemUsingKey("username", "nanda", "id", "123");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
     }
 
+    // delete??
     @Test
     public void putADocumentAndDeleteIfSuccessful() {
         try {
@@ -50,7 +52,7 @@ public class SnapshotRepositoryTest {
     @Test
     public void getItem() {
         try {
-            snapshotRepository.getItem("id", "50");
+            snapshotRepository.getItem("username", "nanda", "id", "123");
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -57,7 +57,8 @@ public class SnapshotRepository {
         documentDynamoDbTable = enhancedClient.table("Snapshot",
                 TableSchema.documentSchemaBuilder()
                         // Specify the primary key attributes.
-                        .addIndexPartitionKey(TableMetadata.primaryIndexName(),"id", AttributeValueType.S)
+                        .addIndexPartitionKey(TableMetadata.primaryIndexName(),"username", AttributeValueType.S)
+                        .addIndexSortKey(TableMetadata.primaryIndexName(), "id", AttributeValueType.S)
                         // Specify attribute converter providers. Minimally add the default one.
                         .attributeConverterProviders(AttributeConverterProvider.defaultProvider())
                         .build());
@@ -74,19 +75,27 @@ public class SnapshotRepository {
                 .region(Region.US_WEST_2)
                 .endpointOverride(URI.create("http://localhost:8000"))
                 .build();
-        return createTable(ddb, "Snapshot", "id");
+        return createTable(ddb, "Snapshot", "username", "id"); //username?
     }
 
-    public static String createTable(DynamoDbClient ddb, String tableName, String key) {
+    public static String createTable(DynamoDbClient ddb, String tableName, String partition_key, String sort_key) {
         DynamoDbWaiter dbWaiter = ddb.waiter();
         CreateTableRequest request = CreateTableRequest.builder()
                 .attributeDefinitions(AttributeDefinition.builder()
-                        .attributeName(key)
+                        .attributeName(partition_key)
+                        .attributeType(ScalarAttributeType.S)
+                        .build())
+                .attributeDefinitions(AttributeDefinition.builder()
+                        .attributeName(sort_key)
                         .attributeType(ScalarAttributeType.S)
                         .build())
                 .keySchema(KeySchemaElement.builder()
-                        .attributeName(key)
+                        .attributeName(partition_key)
                         .keyType(KeyType.HASH)
+                        .build())
+                .keySchema(KeySchemaElement.builder()
+                        .attributeName(sort_key)
+                        .keyType(KeyType.RANGE)
                         .build())
                 .provisionedThroughput(ProvisionedThroughput.builder()
                         .readCapacityUnits(10L)
@@ -127,11 +136,14 @@ public class SnapshotRepository {
 
 
 
-    public void getItem(String key, String keyVal) {
+    public void getItem(String partition_key, String partition_keyVal, String sort_key, String sort_keyVal) {
 
         HashMap<String,AttributeValue> keyToGet = new HashMap<>();
-        keyToGet.put(key, AttributeValue.builder()
-                .s(keyVal)
+        keyToGet.put(partition_key, AttributeValue.builder()
+                .s(partition_keyVal)
+                .build());
+        keyToGet.put(sort_key, AttributeValue.builder()
+                .s(sort_keyVal)
                 .build());
 
         GetItemRequest request = GetItemRequest.builder()
@@ -149,7 +161,7 @@ public class SnapshotRepository {
                     System.out.format("%s: %s\n", key1, returnedItem.get(key1).toString());
                 }
             } else {
-                System.out.format("No item found with the key %s!\n", key);
+                System.out.format("No item found with the key %s, %s!\n", partition_keyVal, sort_keyVal);
             }
 
         } catch (DynamoDbException e) {
@@ -167,10 +179,13 @@ public class SnapshotRepository {
     }
 
 
-    public void deleteItemFromKey(String key, String keyVal) {
+    public void deleteItemUsingKey(String partition_key, String partition_keyVal, String sort_key, String sort_keyVal) {
         HashMap<String,AttributeValue> keyToGet = new HashMap<>();
-        keyToGet.put(key, AttributeValue.builder()
-                .s(keyVal)
+        keyToGet.put(partition_key, AttributeValue.builder()
+                .s(partition_keyVal)
+                .build());
+        keyToGet.put(sort_key, AttributeValue.builder()
+                .s(sort_keyVal)
                 .build());
 
         DeleteItemRequest deleteReq = DeleteItemRequest.builder()
