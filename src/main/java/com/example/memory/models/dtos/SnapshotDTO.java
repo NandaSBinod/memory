@@ -8,8 +8,10 @@ import java.time.Instant;
 @Value
 @Builder
 public class SnapshotDTO {
-    long id;
-    Instant time; // convert to OffsetDateTime for storage
+    String id; //keep? username? sort key?
+    Instant time; // convert to OffsetDateTime for storage // Instant?? // generate at front or back end?
+
+    String content;
 
 
 
